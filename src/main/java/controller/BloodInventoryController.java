@@ -247,6 +247,8 @@ public class BloodInventoryController extends HttpServlet {
             
             boolean inventoryAdded = bloodInventoryDAO.addBloodInventory(inventory);
             
+            System.out.println("Inventory add result: " + inventoryAdded);
+
             if (inventoryAdded) {
                 request.setAttribute("success", "Blood inventory added successfully");
                 response.sendRedirect(request.getContextPath() + "/inventory/list");
@@ -255,7 +257,11 @@ public class BloodInventoryController extends HttpServlet {
                 request.getRequestDispatcher("/view/admin/inventory/add.jsp").forward(request, response);
             }
         } catch (IllegalArgumentException e) {
-            request.setAttribute("error", "Invalid date format");
+            request.setAttribute("error", "Invalid date format: " + e.getMessage());
+            request.getRequestDispatcher("/view/admin/inventory/add.jsp").forward(request, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("error", "Failed to add blood inventory: " + e.getMessage());
             request.getRequestDispatcher("/view/admin/inventory/add.jsp").forward(request, response);
         }
     }
@@ -509,4 +515,3 @@ public class BloodInventoryController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/inventory/list");
     }
 }
-

@@ -6,6 +6,8 @@ import java.sql.Timestamp;
 public class BloodRequest {
     private int id;
     private int userId;
+    // Add the donorId field after the userId field
+    private int donorId;
     private String bloodGroup;
     private int quantity;
     private String urgency; // normal, urgent, critical
@@ -23,11 +25,12 @@ public class BloodRequest {
     public BloodRequest() {
     }
 
-    public BloodRequest(int id, int userId, String bloodGroup, int quantity, String urgency, String status,
+    public BloodRequest(int id, int userId, int donorId, String bloodGroup, int quantity, String urgency, String status,
                        String hospitalName, String hospitalAddress, String patientName, String contactPerson,
                        String contactPhone, String reason, Timestamp requestDate, Date requiredDate) {
         this.id = id;
         this.userId = userId;
+        this.donorId = donorId;
         this.bloodGroup = bloodGroup;
         this.quantity = quantity;
         this.urgency = urgency;
@@ -55,8 +58,22 @@ public class BloodRequest {
         return userId;
     }
 
+    // For backward compatibility with any code that might use getRequesterId
+    public int getRequesterId() {
+        return userId;
+    }
+
     public void setUserId(int userId) {
         this.userId = userId;
+    }
+
+    // Add the getter and setter for donorId after the userId getter/setter methods
+    public int getDonorId() {
+        return donorId;
+    }
+
+    public void setDonorId(int donorId) {
+        this.donorId = donorId;
     }
 
     public String getBloodGroup() {
@@ -160,6 +177,7 @@ public class BloodRequest {
         return "BloodRequest{" +
                 "id=" + id +
                 ", userId=" + userId +
+                ", donorId=" + donorId +
                 ", bloodGroup='" + bloodGroup + '\'' +
                 ", quantity=" + quantity +
                 ", urgency='" + urgency + '\'' +
@@ -175,4 +193,3 @@ public class BloodRequest {
                 '}';
     }
 }
-

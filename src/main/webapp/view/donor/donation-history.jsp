@@ -135,6 +135,12 @@
             color: #fff;
         }
         
+        .timeline-actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
         @media screen and (max-width: 768px) {
             .timeline::after {
                 left: 31px;
@@ -156,6 +162,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <jsp:include page="../common/header.jsp" />
@@ -217,7 +224,12 @@
                             <% if("scheduled".equals(appointment.getStatus())) { %>
                                 <div class="timeline-actions">
                                     <a href="${pageContext.request.contextPath}/donor/reschedule-appointment?id=<%= appointment.getId() %>" class="btn btn-secondary">Reschedule</a>
-                                    <a href="${pageContext.request.contextPath}/donor/cancel-appointment?id=<%= appointment.getId() %>" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</a>
+                                    <form action="${pageContext.request.contextPath}/donor/cancel-appointment" method="post" style="display: inline;">
+                                        <input type="hidden" name="id" value="<%= appointment.getId() %>">
+                                        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                            <i class="fas fa-times"></i> Cancel
+                                        </button>
+                                    </form>
                                 </div>
                             <% } %>
                         </div>
@@ -237,4 +249,3 @@
     <jsp:include page="../common/footer.jsp" />
 </body>
 </html>
-

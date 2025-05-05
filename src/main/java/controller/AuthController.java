@@ -1,248 +1,193 @@
 package controller;
 
-import model.User;
-import model.UserDAO;
-import model.Donor;
-import model.DonorDAO;
-import util.ValidationUtil;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import model.Donor;
+import model.DonorDAO;
+import model.User;
+import model.UserDAO;
+import util.ValidationUtil;
+
 import java.io.IOException;
-import java.sql.Date;
-import java.time.LocalDate;
 
-@WebServlet("/auth/*")
+@WebServlet(urlPatterns = {"/auth/login", "/auth/register", "/auth/logout"})
 public class AuthController extends HttpServlet {
-  private UserDAO userDAO;
-  private DonorDAO donorDAO;
+    private UserDAO userDAO;
+    private DonorDAO donorDAO;
 
-  @Override
-  public void init() throws ServletException {
-      userDAO = new UserDAO();
-      donorDAO = new DonorDAO();
-  }
+    @Override
+    public void init() throws ServletException {
+        userDAO = new UserDAO();
+        donorDAO = new DonorDAO();
+    }
 
-  @Override
-  protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      String pathInfo = request.getPathInfo();
-      
-      if (pathInfo == null || pathInfo.equals("/")) {
-          response.sendRedirect(request.getContextPath() + "/auth/login");
-          return;
-      }
-      
-      switch (pathInfo) {
-          case "/login":
-              request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
-              break;
-          case "/register":
-              request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
-              break;
-          case "/logout":
-              logout(request, response);
-              break;
-          default:
-              response.sendError(HttpServletResponse.SC_NOT_FOUND);
-              break;
-      }
-  }
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String pathInfo = request.getServletPath();
+        
+        if (pathInfo.equals("/auth/logout")) {
+            HttpSession session = request.getSession(false);
+            if (session != null) {
+                session.invalidate();
+            }
+            response.sendRedirect(request.getContextPath() + "/auth/login");
+            return;
+        }
 
-  @Override
-  protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      String pathInfo = request.getPathInfo();
-      
-      if (pathInfo == null || pathInfo.equals("/")) {
-          response.sendError(HttpServletResponse.SC_BAD_REQUEST);
-          return;
-      }
-      
-      switch (pathInfo) {
-          case "/login":
-              login(request, response);
-              break;
-          case "/register":
-              register(request, response);
-              break;
-          default:
-              response.sendError(HttpServletResponse.SC_NOT_FOUND);
-              break;
-      }
-  }
+        // Check if user is already logged in
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("userId") != null) {
+            // Use userId instead of user object to avoid serialization issues
+            String userRole = (String) session.getAttribute("userRole");
+            if (userRole != null) {
+                // Only redirect if we're on login or register page
+                if (pathInfo.equals("/auth/login") || pathInfo.equals("/auth/register")) {
+                    redirectBasedOnRole(response, userRole, request.getContextPath());
+                    return;
+                }
+            }
+        }
 
-  private void login(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      String email = request.getParameter("email");
-      String password = request.getParameter("password");
-      
-      // Validate input
-      if (!ValidationUtil.isValidEmail(email)) {
-          request.setAttribute("error", "Invalid email format");
-          request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
-          return;
-      }
-      
-      // Authenticate user
-      User user = userDAO.authenticateUser(email, password);
-      
-      if (user == null) {
-          request.setAttribute("error", "Invalid email or password");
-          request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
-          return;
-      }
-      
-      // Create session
-      HttpSession session = request.getSession();
-      session.setAttribute("user", user);
-      session.setAttribute("userId", user.getId());
-      session.setAttribute("userRole", user.getRole());
-      
-      // If user is a donor, get donor information
-      if ("donor".equals(user.getRole())) {
-          Donor donor = donorDAO.getDonorByUserId(user.getId());
-          if (donor != null) {
-              session.setAttribute("donor", donor);
-              session.setAttribute("donorId", donor.getId());
-          }
-      }
-      
-      // Redirect based on role
-      switch (user.getRole()) {
-          case "admin":
-              response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-              break;
-          case "donor":
-              response.sendRedirect(request.getContextPath() + "/donor/dashboard");
-              break;
-          case "general":
-              response.sendRedirect(request.getContextPath() + "/user/dashboard");
-              break;
-          default:
-              response.sendRedirect(request.getContextPath() + "/");
-              break;
-      }
-  }
+        if (pathInfo.equals("/auth/login")) {
+            request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
+        } else if (pathInfo.equals("/auth/register")) {
+            request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
+        }
+    }
 
-  private void register(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      String name = request.getParameter("name");
-      String email = request.getParameter("email");
-      String password = request.getParameter("password");
-      String confirmPassword = request.getParameter("confirmPassword");
-      String phone = request.getParameter("phone");
-      String address = request.getParameter("address");
-      String role = request.getParameter("role");
-      
-      // For donor registration
-      String bloodGroup = request.getParameter("bloodGroup");
-      String medicalHistory = request.getParameter("medicalHistory");
-      
-      // Validate input
-      boolean hasError = false;
-      
-      if (!ValidationUtil.isNotEmpty(name)) {
-          request.setAttribute("nameError", "Name is required");
-          hasError = true;
-      }
-      
-      if (!ValidationUtil.isValidEmail(email)) {
-          request.setAttribute("emailError", "Invalid email format");
-          hasError = true;
-      } else if (userDAO.getUserByEmail(email) != null) {
-          request.setAttribute("emailError", "Email already exists");
-          hasError = true;
-      }
-      
-      if (!ValidationUtil.isValidPassword(password)) {
-          request.setAttribute("passwordError", "Password must be at least 8 characters and contain letters and numbers");
-          hasError = true;
-      }
-      
-      if (!password.equals(confirmPassword)) {
-          request.setAttribute("confirmPasswordError", "Passwords do not match");
-          hasError = true;
-      }
-      
-      if (!ValidationUtil.isValidPhone(phone)) {
-          request.setAttribute("phoneError", "Invalid phone number");
-          hasError = true;
-      }
-      
-      if (!ValidationUtil.isNotEmpty(address)) {
-          request.setAttribute("addressError", "Address is required");
-          hasError = true;
-      }
-      
-      if ("donor".equals(role) && !ValidationUtil.isValidBloodGroup(bloodGroup)) {
-          request.setAttribute("bloodGroupError", "Invalid blood group");
-          hasError = true;
-      }
-      
-      if (hasError) {
-          // Preserve input values
-          request.setAttribute("name", name);
-          request.setAttribute("email", email);
-          request.setAttribute("phone", phone);
-          request.setAttribute("address", address);
-          request.setAttribute("role", role);
-          request.setAttribute("bloodGroup", bloodGroup);
-          request.setAttribute("medicalHistory", medicalHistory);
-          
-          request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
-          return;
-      }
-      
-      // Create user
-      User user = new User();
-      user.setName(name);
-      user.setEmail(email);
-      user.setPassword(password);
-      user.setPhone(phone);
-      user.setAddress(address);
-      user.setRole(role);
-      user.setRegistrationDate(Date.valueOf(LocalDate.now()));
-      user.setActive(true);
-      
-      boolean userCreated = userDAO.addUser(user);
-      
-      if (!userCreated) {
-          request.setAttribute("error", "Failed to create user");
-          request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
-          return;
-      }
-      
-      // If donor, create donor profile
-      if ("donor".equals(role)) {
-          Donor donor = new Donor();
-          donor.setUserId(user.getId());
-          donor.setBloodGroup(bloodGroup);
-          donor.setAvailable(true);
-          donor.setMedicalHistory(medicalHistory);
-          donor.setDonationCount(0);
-          donor.setLocation(address);
-          
-          boolean donorCreated = donorDAO.addDonor(donor);
-          
-          if (!donorCreated) {
-              request.setAttribute("error", "Failed to create donor profile");
-              request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
-              return;
-          }
-      }
-      
-      // Redirect to login page with success message
-      request.setAttribute("success", "Registration successful. Please login.");
-      request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
-  }
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String pathInfo = request.getServletPath();
 
-  private void logout(HttpServletRequest request, HttpServletResponse response) throws IOException {
-      HttpSession session = request.getSession(false);
-      if (session != null) {
-          session.invalidate();
-      }
-      response.sendRedirect(request.getContextPath() + "/");
-  }
+        if (pathInfo.equals("/auth/login")) {
+            handleLogin(request, response);
+        } else if (pathInfo.equals("/auth/register")) {
+            handleRegistration(request, response);
+        }
+    }
+
+    private void handleLogin(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String contextPath = request.getContextPath();
+
+        // Validate input
+        if (!ValidationUtil.isValidEmail(email) || password == null || password.trim().isEmpty()) {
+            request.setAttribute("error", "Invalid email or password format");
+            request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
+            return;
+        }
+
+        // Authenticate user - password verification happens in the DAO
+        User user = userDAO.authenticate(email, password);
+        if (user == null) {
+            request.setAttribute("error", "Invalid email or password");
+            request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
+            return;
+        }
+
+        // Create session with user ID and role
+        HttpSession session = request.getSession();
+        session.setAttribute("userId", user.getId());
+        session.setAttribute("userRole", user.getRole());
+        session.setAttribute("userName", user.getName());
+        
+        // For donor, also store donor ID
+        if ("donor".equals(user.getRole())) {
+            Donor donor = donorDAO.getDonorByUserId(user.getId());
+            if (donor != null) {
+                session.setAttribute("donorId", donor.getId());
+            }
+        }
+        
+        // Log the session attributes for debugging
+        System.out.println("Session created with userId: " + session.getAttribute("userId"));
+        System.out.println("Session created with userRole: " + session.getAttribute("userRole"));
+        
+        // Redirect based on role
+        redirectBasedOnRole(response, user.getRole(), contextPath);
+    }
+
+    private void handleRegistration(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        String name = request.getParameter("name");
+        String email = request.getParameter("email");
+        String password = request.getParameter("password");
+        String confirmPassword = request.getParameter("confirmPassword");
+        String role = request.getParameter("role");
+        String bloodGroup = request.getParameter("bloodGroup");
+        String phone = request.getParameter("phone");
+        String address = request.getParameter("address");
+
+        // Validate input
+        if (!ValidationUtil.isNotEmpty(name) || !ValidationUtil.isValidEmail(email) || 
+            !ValidationUtil.isValidPassword(password) || !password.equals(confirmPassword)) {
+            request.setAttribute("error", "Invalid input data");
+            request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
+            return;
+        }
+
+        // Check if email already exists
+        if (userDAO.getUserByEmail(email) != null) {
+            request.setAttribute("error", "Email already registered");
+            request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
+            return;
+        }
+
+        // Create user - password will be hashed in the DAO
+        User user = new User();
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(password);
+        user.setPhone(phone);
+        user.setAddress(address);
+        user.setRole(role);
+        user.setRegistrationDate(new java.sql.Date(System.currentTimeMillis()));
+        user.setActive(true);
+
+        int userId = userDAO.addUser(user);
+        if (userId > 0) {
+            // If registering as a donor, create donor record
+            if ("donor".equals(role)) {
+                Donor donor = new Donor();
+                donor.setUserId(userId);
+                donor.setBloodGroup(bloodGroup); // Using setBloodGroup instead of setBloodType
+                donor.setLocation(address); // Using setLocation instead of setAddress
+                // Phone is stored in the User record, not needed in Donor
+                donor.setAvailable(true); // Explicitly set donor as available by default
+                donor.setDonationCount(0);
+                donor.setMedicalHistory(""); // Setting an empty medical history initially
+                
+                // Log the donor creation
+                System.out.println("Creating new donor with userId: " + userId + ", bloodGroup: " + bloodGroup + ", available: true");
+                
+                donorDAO.addDonor(donor);
+            }
+
+            request.setAttribute("success", "Registration successful. Please login.");
+            request.getRequestDispatcher("/view/auth/login.jsp").forward(request, response);
+        } else {
+            request.setAttribute("error", "Registration failed. Please try again.");
+            request.getRequestDispatcher("/view/auth/register.jsp").forward(request, response);
+        }
+    }
+
+    private void redirectBasedOnRole(HttpServletResponse response, String role, String contextPath) throws IOException {
+        switch (role) {
+            case "admin":
+                response.sendRedirect(contextPath + "/admin/dashboard");
+                break;
+            case "donor":
+                response.sendRedirect(contextPath + "/donor/dashboard");
+                break;
+            case "general":
+                response.sendRedirect(contextPath + "/user/dashboard");
+                break;
+            default:
+                response.sendRedirect(contextPath + "/");
+        }
+    }
 }
-

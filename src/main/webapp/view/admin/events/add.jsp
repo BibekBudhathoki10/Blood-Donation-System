@@ -27,7 +27,7 @@
         <% } %>
         
         <div class="auth-form">
-            <form action="${pageContext.request.contextPath}/events/add" method="post">
+            <form action="${pageContext.request.contextPath}/admin/events/add" method="post">
                 <div class="form-group">
                     <label for="title">Event Title:</label>
                     <input type="text" id="title" name="title" value="${title}" required>
@@ -150,4 +150,3 @@
     </script>
 </body>
 </html>
-

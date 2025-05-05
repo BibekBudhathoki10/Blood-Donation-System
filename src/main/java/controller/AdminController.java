@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
+import java.sql.Timestamp;
 
 @WebServlet("/admin/*")
 public class AdminController extends HttpServlet {
@@ -545,106 +546,121 @@ public class AdminController extends HttpServlet {
       request.getRequestDispatcher("/view/admin/events/view.jsp").forward(request, response);
   }
   
-  private void addEvent(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      String title = request.getParameter("title");
-      String description = request.getParameter("description");
-      String eventDate = request.getParameter("eventDate");
-      String startTime = request.getParameter("startTime");
-      String endTime = request.getParameter("endTime");
-      String location = request.getParameter("location");
-      String organizer = request.getParameter("organizer");
-      String contactEmail = request.getParameter("contactEmail");
-      String contactPhone = request.getParameter("contactPhone");
-      String maxParticipantsStr = request.getParameter("maxParticipants");
-      
-      // Validate input
-      if (title == null || eventDate == null || startTime == null || endTime == null || 
-          location == null || organizer == null || maxParticipantsStr == null || 
-          !ValidationUtil.isPositiveNumeric(maxParticipantsStr)) {
-          request.setAttribute("error", "Invalid input data");
-          showAddEvent(request, response);
-          return;
-      }
-      
-      int maxParticipants = Integer.parseInt(maxParticipantsStr);
-      
-      // Create new event
-      DonationEvent event = new DonationEvent();
-      event.setTitle(title);
-      event.setDescription(description);
-      event.setEventDate(java.sql.Date.valueOf(eventDate));
-      //event.setEndTime(java.sql.Time.valueOf(startTime + ":00"));
-      //event.setStartTime(java.sql.Time.valueOf(endTime + ":00"));
-      event.setLocation(location);
-      event.setOrganizer(organizer);
-      event.setContactEmail(contactEmail);
-      event.setContactPhone(contactPhone);
-      event.setMaxParticipants(maxParticipants);
-      
-      // Add to database
-      boolean added = donationEventDAO.addDonationEvent(event);
-      
-      if (added) {
-          request.setAttribute("success", "Donation event added successfully");
-      } else {
-          request.setAttribute("error", "Failed to add donation event");
-      }
-      
-      // Redirect to events list
-      response.sendRedirect(request.getContextPath() + "/admin/events");
-  }
   
-  private void updateEvent(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-      String eventIdStr = request.getParameter("id");
-      String title = request.getParameter("title");
-      String description = request.getParameter("description");
-      String eventDate = request.getParameter("eventDate");
-      String startTime = request.getParameter("startTime");
-      String endTime = request.getParameter("endTime");
-      String location = request.getParameter("location");
-      String organizer = request.getParameter("organizer");
-      String contactEmail = request.getParameter("contactEmail");
-      String contactPhone = request.getParameter("contactPhone");
-      String maxParticipantsStr = request.getParameter("maxParticipants");
-      
-      // Validate input
-      if (!ValidationUtil.isPositiveNumeric(eventIdStr) || title == null || eventDate == null || 
-          startTime == null || endTime == null || location == null || organizer == null || 
-          maxParticipantsStr == null || !ValidationUtil.isPositiveNumeric(maxParticipantsStr)) {
-          request.setAttribute("error", "Invalid input data");
-          response.sendRedirect(request.getContextPath() + "/admin/events");
-          return;
-      }
-      
-      int eventId = Integer.parseInt(eventIdStr);
-      int maxParticipants = Integer.parseInt(maxParticipantsStr);
-      
-      // Create event with updated values
-      DonationEvent event = new DonationEvent();
-      event.setId(eventId);
-      event.setTitle(title);
-      event.setDescription(description);
-      event.setEventDate(java.sql.Date.valueOf(eventDate));
-      //event.setStartTime(java.sql.Time.valueOf(startTime + ":00"));
-     // event.setEndTime(java.sql.Time.valueOf(endTime + ":00"));
-      event.setLocation(location);
-      event.setOrganizer(organizer);
-      event.setContactEmail(contactEmail);
-      event.setContactPhone(contactPhone);
-      event.setMaxParticipants(maxParticipants);
-      
-      // Update in database
-      boolean updated = donationEventDAO.updateDonationEvent(event);
-      
-      if (updated) {
-          request.setAttribute("success", "Donation event updated successfully");
-      } else {
-          request.setAttribute("error", "Failed to update donation event");
-      }
-      
-      // Redirect to events list
-      response.sendRedirect(request.getContextPath() + "/admin/events");
-  }
+private void addEvent(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    String title = request.getParameter("title");
+    String description = request.getParameter("description");
+    String eventDate = request.getParameter("eventDate");
+    String startTime = request.getParameter("startTime");
+    String endTime = request.getParameter("endTime");
+    String location = request.getParameter("location");
+    String organizer = request.getParameter("organizer");
+    String contactEmail = request.getParameter("contactEmail");
+    String contactPhone = request.getParameter("contactPhone");
+    String maxParticipantsStr = request.getParameter("maxParticipants");
+    
+    // Validate input
+    if (title == null || eventDate == null || startTime == null || endTime == null || 
+        location == null || organizer == null || maxParticipantsStr == null || 
+        !ValidationUtil.isPositiveNumeric(maxParticipantsStr)) {
+        request.setAttribute("error", "Invalid input data");
+        showAddEvent(request, response);
+        return;
+    }
+    
+    int maxParticipants = Integer.parseInt(maxParticipantsStr);
+    
+    // Create new event
+    DonationEvent event = new DonationEvent();
+    event.setTitle(title);
+    event.setDescription(description);
+    event.setEventDate(java.sql.Date.valueOf(eventDate));
+    event.setStartTime(startTime);
+    event.setEndTime(endTime);
+    event.setLocation(location);
+    event.setOrganizer(organizer);
+    event.setContactPerson(organizer); // Set contact person to organizer if not provided
+    event.setContactEmail(contactEmail);
+    event.setContactPhone(contactPhone);
+    event.setMaxParticipants(maxParticipants);
+    event.setCreatedAt(new Timestamp(System.currentTimeMillis())); // Set creation timestamp
+    
+    // Add to database
+    boolean added = donationEventDAO.addDonationEvent(event);
+    
+    if (added) {
+        request.setAttribute("success", "Donation event added successfully");
+    } else {
+        request.setAttribute("error", "Failed to add donation event");
+    }
+    
+    // Redirect to events list
+    response.sendRedirect(request.getContextPath() + "/admin/events");
+}
+  
+  
+private void updateEvent(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    String eventIdStr = request.getParameter("id");
+    String title = request.getParameter("title");
+    String description = request.getParameter("description");
+    String eventDate = request.getParameter("eventDate");
+    String startTime = request.getParameter("startTime");
+    String endTime = request.getParameter("endTime");
+    String location = request.getParameter("location");
+    String organizer = request.getParameter("organizer");
+    String contactEmail = request.getParameter("contactEmail");
+    String contactPhone = request.getParameter("contactPhone");
+    String maxParticipantsStr = request.getParameter("maxParticipants");
+    
+    // Validate input
+    if (!ValidationUtil.isPositiveNumeric(eventIdStr) || title == null || eventDate == null || 
+        startTime == null || endTime == null || location == null || organizer == null || 
+        maxParticipantsStr == null || !ValidationUtil.isPositiveNumeric(maxParticipantsStr)) {
+        request.setAttribute("error", "Invalid input data");
+        response.sendRedirect(request.getContextPath() + "/admin/events");
+        return;
+    }
+    
+    int eventId = Integer.parseInt(eventIdStr);
+    int maxParticipants = Integer.parseInt(maxParticipantsStr);
+    
+    // Get existing event to preserve any fields not being updated
+    DonationEvent existingEvent = donationEventDAO.getDonationEventById(eventId);
+    if (existingEvent == null) {
+        request.setAttribute("error", "Event not found");
+        response.sendRedirect(request.getContextPath() + "/admin/events");
+        return;
+    }
+    
+    // Create event with updated values
+    DonationEvent event = new DonationEvent();
+    event.setId(eventId);
+    event.setTitle(title);
+    event.setDescription(description);
+    event.setEventDate(java.sql.Date.valueOf(eventDate));
+    event.setStartTime(startTime);
+    event.setEndTime(endTime);
+    event.setLocation(location);
+    event.setOrganizer(organizer);
+    event.setContactPerson(organizer); // Set contact person to organizer if not provided
+    event.setContactEmail(contactEmail);
+    event.setContactPhone(contactPhone);
+    event.setMaxParticipants(maxParticipants);
+    event.setCreatedAt(existingEvent.getCreatedAt()); // Preserve creation timestamp
+    event.setUpdatedAt(new Timestamp(System.currentTimeMillis())); // Set update timestamp
+    
+    // Update in database
+    boolean updated = donationEventDAO.updateDonationEvent(event);
+    
+    if (updated) {
+        request.setAttribute("success", "Donation event updated successfully");
+    } else {
+        request.setAttribute("error", "Failed to update donation event");
+    }
+    
+    // Redirect to events list
+    response.sendRedirect(request.getContextPath() + "/admin/events");
+}
   
   private void deleteEvent(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
       String eventIdStr = request.getParameter("id");

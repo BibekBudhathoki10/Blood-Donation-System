@@ -127,15 +127,20 @@
                     Blood Donation Drive
                 </div>
                 <div class="event-content">
-                    <h3 class="event-title"><%= event.getTitle() %></h3>
+                    <h3 class="event-title"><%= event.getTitle() != null ? event.getTitle() : "Untitled Event" %></h3>
                     <div class="event-date">
-                        <%= event.getEventDate() %>, <%= event.getStartTime() %> - <%= event.getEndTime() %>
+                        <%= event.getEventDate() != null ? event.getEventDate() : "Date TBD" %>
+                        <% if(event.getStartTime() != null && event.getEndTime() != null) { %>
+                            , <%= event.getStartTime() %> - <%= event.getEndTime() %>
+                        <% } else if(event.getStartTime() != null) { %>
+                            , <%= event.getStartTime() %>
+                        <% } %>
                     </div>
                     <div class="event-location">
-                        <i class="fas fa-map-marker-alt"></i> <%= event.getLocation() %>
+                        <i class="fas fa-map-marker-alt"></i> <%= event.getLocation() != null ? event.getLocation() : "Location TBD" %>
                     </div>
                     <div class="event-description">
-                        <%= event.getDescription() != null ? event.getDescription() : "Join us for this blood donation event and help save lives!" %>
+                        <%= event.getDescription() != null && !event.getDescription().isEmpty() ? event.getDescription() : "Join us for this blood donation event and help save lives!" %>
                     </div>
                     <div class="event-footer">
                         <div class="event-participants">
@@ -163,4 +168,3 @@
     <jsp:include page="../../common/footer.jsp" />
 </body>
 </html>
-

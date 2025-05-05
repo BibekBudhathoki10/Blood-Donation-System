@@ -1,6 +1,7 @@
 package model;
 
 import util.DBConnection;
+import util.PasswordUtil;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -17,13 +18,17 @@ public class UserDAO {
         }
     }
 
-    // Create a new user
-    public boolean addUser(User user) {
+    // Create a new user with hashed password
+    public int addUser(User user) {
         String sql = "INSERT INTO users (name, email, password, phone, address, role, registration_date, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, user.getName());
             statement.setString(2, user.getEmail());
-            statement.setString(3, user.getPassword());
+            
+            // Hash the password before storing
+            String hashedPassword = PasswordUtil.hashPassword(user.getPassword());
+            statement.setString(3, hashedPassword);
+            
             statement.setString(4, user.getPhone());
             statement.setString(5, user.getAddress());
             statement.setString(6, user.getRole());
@@ -34,15 +39,16 @@ public class UserDAO {
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
-                        user.setId(generatedKeys.getInt(1));
-                        return true;
+                        int id = generatedKeys.getInt(1);
+                        user.setId(id);
+                        return id;
                     }
                 }
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return false;
+        return -1;
     }
 
     // Read a user by ID
@@ -92,35 +98,33 @@ public class UserDAO {
         return users;
     }
 
-    // Read users by role
-    public List<User> getUsersByRole(String role) {
-        List<User> users = new ArrayList<>();
-        String sql = "SELECT * FROM users WHERE role = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setString(1, role);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                while (resultSet.next()) {
-                    users.add(extractUserFromResultSet(resultSet));
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return users;
-    }
-
     // Update a user
     public boolean updateUser(User user) {
-        String sql = "UPDATE users SET name = ?, email = ?, password = ?, phone = ?, address = ?, role = ?, active = ? WHERE id = ?";
+        String sql = "UPDATE users SET name = ?, email = ?, phone = ?, address = ?, role = ?, active = ? WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, user.getName());
             statement.setString(2, user.getEmail());
-            statement.setString(3, user.getPassword());
-            statement.setString(4, user.getPhone());
-            statement.setString(5, user.getAddress());
-            statement.setString(6, user.getRole());
-            statement.setBoolean(7, user.isActive());
-            statement.setInt(8, user.getId());
+            statement.setString(3, user.getPhone());
+            statement.setString(4, user.getAddress());
+            statement.setString(5, user.getRole());
+            statement.setBoolean(6, user.isActive());
+            statement.setInt(7, user.getId());
+            
+            return statement.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    
+    // Update user's password
+    public boolean updatePassword(int userId, String newPassword) {
+        String sql = "UPDATE users SET password = ? WHERE id = ?";
+        try (PreparedStatement statement = connection.prepareStatement(sql)) {
+            // Hash the new password
+            String hashedPassword = PasswordUtil.hashPassword(newPassword);
+            statement.setString(1, hashedPassword);
+            statement.setInt(2, userId);
             
             return statement.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -141,27 +145,19 @@ public class UserDAO {
         return false;
     }
 
-    // Deactivate a user
-    public boolean deactivateUser(int id) {
-        String sql = "UPDATE users SET active = false WHERE id = ?";
-        try (PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setInt(1, id);
-            return statement.executeUpdate() > 0;
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    // Authenticate a user
-    public User authenticateUser(String email, String password) {
-        String sql = "SELECT * FROM users WHERE email = ? AND password = ? AND active = true";
+    // Authenticate a user with password verification
+    public User authenticate(String email, String password) {
+        String sql = "SELECT * FROM users WHERE email = ? AND active = true";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, email);
-            statement.setString(2, password);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (resultSet.next()) {
-                    return extractUserFromResultSet(resultSet);
+                    User user = extractUserFromResultSet(resultSet);
+                    
+                    // Verify the password using PBKDF2
+                    if (PasswordUtil.verifyPassword(password, user.getPassword())) {
+                        return user;
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -185,4 +181,3 @@ public class UserDAO {
         return user;
     }
 }
-

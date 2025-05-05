@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="model.User, model.BloodRequest, java.util.List, java.text.SimpleDateFormat, java.util.Date" %>
+<%@ page import="model.DonationEvent" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -240,17 +241,17 @@
       <div class="dashboard-card">
           <h2>Upcoming Donation Events</h2>
           <% 
-              List<Object[]> events = (List<Object[]>) request.getAttribute("upcomingEvents");
+              List<DonationEvent> events = (List<DonationEvent>) request.getAttribute("upcomingEvents");
               if(events != null && !events.isEmpty()) {
-                  for(Object[] event : events) {
+                  for(DonationEvent event : events) {
           %>
           <div class="event-item">
               <div>
-                  <h4><%= event[0] %></h4>
-                  <p><%= event[1] %></p>
+                  <h4><%= event.getTitle() %></h4>
+                  <p><%= event.getLocation() %></p>
               </div>
-              <span class="event-date"><%= event[2] %></span>
-              <a href="${pageContext.request.contextPath}/user/events/view?id=<%= event[3] %>" class="btn btn-sm btn-primary">View Details</a>
+              <span class="event-date"><%= event.getEventDate() %></span>
+              <a href="${pageContext.request.contextPath}/user/events/view?id=<%= event.getId() %>" class="btn btn-sm btn-primary">View Details</a>
           </div>
           <% 
                   }
@@ -265,4 +266,3 @@
   <jsp:include page="../common/footer.jsp" />
 </body>
 </html>
-

@@ -77,6 +77,25 @@
             cursor: not-allowed;
         }
         
+        .diagnostic-info {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #e74c3c;
+            font-family: monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .error-details {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #fff3f3;
+            border-left: 4px solid #e74c3c;
+            font-size: 0.9em;
+        }
+        
         @media (max-width: 768px) {
             .form-row {
                 grid-template-columns: 1fr;
@@ -101,6 +120,12 @@
             <div class="alert alert-danger">
                 <%= request.getAttribute("error") %>
             </div>
+            <% if(request.getAttribute("errorDetails") != null) { %>
+                <div class="error-details">
+                    <strong>Error Details:</strong>
+                    <pre><%= request.getAttribute("errorDetails") %></pre>
+                </div>
+            <% } %>
         <% } %>
         
         <div class="eligibility-checklist">
@@ -138,14 +163,14 @@
                         <label>Appointment Time:</label>
                         <input type="hidden" id="appointmentTime" name="appointmentTime" value="${appointmentTime}" required>
                         <div class="time-slots">
-                            <div class="time-slot" data-time="09:00">9:00 AM</div>
-                            <div class="time-slot" data-time="10:00">10:00 AM</div>
-                            <div class="time-slot" data-time="11:00">11:00 AM</div>
-                            <div class="time-slot" data-time="12:00">12:00 PM</div>
-                            <div class="time-slot" data-time="13:00">1:00 PM</div>
-                            <div class="time-slot" data-time="14:00">2:00 PM</div>
-                            <div class="time-slot" data-time="15:00">3:00 PM</div>
-                            <div class="time-slot" data-time="16:00">4:00 PM</div>
+                            <div class="time-slot" data-time="09:00:00">9:00 AM</div>
+                            <div class="time-slot" data-time="10:00:00">10:00 AM</div>
+                            <div class="time-slot" data-time="11:00:00">11:00 AM</div>
+                            <div class="time-slot" data-time="12:00:00">12:00 PM</div>
+                            <div class="time-slot" data-time="13:00:00">1:00 PM</div>
+                            <div class="time-slot" data-time="14:00:00">2:00 PM</div>
+                            <div class="time-slot" data-time="15:00:00">3:00 PM</div>
+                            <div class="time-slot" data-time="16:00:00">4:00 PM</div>
                         </div>
                         <% if(request.getAttribute("timeError") != null) { %>
                             <span class="error"><%= request.getAttribute("timeError") %></span>
@@ -170,6 +195,39 @@
                 </div>
             </form>
         </div>
+        
+        <% if(request.getAttribute("connectionStatus") != null || request.getAttribute("tablesList") != null || request.getAttribute("diagnosticInfo") != null) { %>
+            <div class="diagnostic-info">
+                <h3>Diagnostic Information</h3>
+                <% if(request.getAttribute("diagnosticInfo") != null) { %>
+                    <div>
+                        <strong>Detailed Diagnostics:</strong>
+                        <pre><%= request.getAttribute("diagnosticInfo") %></pre>
+                    </div>
+                <% } %>
+                
+                <% if(request.getAttribute("connectionStatus") != null) { %>
+                    <div>
+                        <strong>Connection Status:</strong>
+                        <pre><%= request.getAttribute("connectionStatus") %></pre>
+                    </div>
+                <% } %>
+                
+                <% if(request.getAttribute("tablesList") != null) { %>
+                    <div>
+                        <strong>Database Tables:</strong>
+                        <pre><%= request.getAttribute("tablesList") %></pre>
+                    </div>
+                <% } %>
+                
+                <% if(request.getAttribute("stackTrace") != null) { %>
+                    <div>
+                        <strong>Stack Trace:</strong>
+                        <pre><%= request.getAttribute("stackTrace") %></pre>
+                    </div>
+                <% } %>
+            </div>
+        <% } %>
     </div>
     
     <jsp:include page="../common/footer.jsp" />
@@ -189,6 +247,7 @@
                 });
             }
             
+            // Update the time slot click handler to use the correct time format
             timeSlots.forEach(slot => {
                 slot.addEventListener('click', function() {
                     if (!this.classList.contains('disabled')) {
@@ -198,8 +257,11 @@
                         // Add selected class to clicked slot
                         this.classList.add('selected');
                         
-                        // Update hidden input value
-                        timeInput.value = this.dataset.time;
+                        // Use the time value directly from data-time attribute (already in HH:MM:SS format)
+                        const timeValue = this.dataset.time;
+                        console.log("Selected time value: " + timeValue);
+                        
+                        timeInput.value = timeValue;
                     }
                 });
             });
@@ -207,9 +269,24 @@
             // Form validation
             const appointmentForm = document.getElementById('appointmentForm');
             appointmentForm.addEventListener('submit', function(event) {
+                let hasError = false;
+                
+                // Check if time is selected
                 if (!timeInput.value) {
                     event.preventDefault();
                     alert('Please select an appointment time');
+                    hasError = true;
+                }
+                
+                // Validate time format
+                if (timeInput.value && !timeInput.value.match(/^\d{1,2}:\d{2}:\d{2}$/)) {
+                    event.preventDefault();
+                    alert('Invalid time format. Please select a time from the available slots.');
+                    hasError = true;
+                }
+                
+                if (!hasError) {
+                    console.log("Form submitted with time: " + timeInput.value);
                 }
             });
             
@@ -233,4 +310,3 @@
     </script>
 </body>
 </html>
-

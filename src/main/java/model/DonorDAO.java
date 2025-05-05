@@ -23,7 +23,13 @@ public class DonorDAO {
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setInt(1, donor.getUserId());
             statement.setString(2, donor.getBloodGroup());
-            statement.setDate(3, donor.getLastDonationDate());
+            
+            if (donor.getLastDonationDate() != null) {
+                statement.setDate(3, donor.getLastDonationDate());
+            } else {
+                statement.setNull(3, java.sql.Types.DATE);
+            }
+            
             statement.setBoolean(4, donor.isAvailable());
             statement.setString(5, donor.getMedicalHistory());
             statement.setInt(6, donor.getDonationCount());
@@ -145,7 +151,13 @@ public class DonorDAO {
         String sql = "UPDATE donors SET blood_group = ?, last_donation_date = ?, available = ?, medical_history = ?, donation_count = ?, location = ? WHERE id = ?";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, donor.getBloodGroup());
-            statement.setDate(2, donor.getLastDonationDate());
+            
+            if (donor.getLastDonationDate() != null) {
+                statement.setDate(2, donor.getLastDonationDate());
+            } else {
+                statement.setNull(2, java.sql.Types.DATE);
+            }
+            
             statement.setBoolean(3, donor.isAvailable());
             statement.setString(4, donor.getMedicalHistory());
             statement.setInt(5, donor.getDonationCount());
@@ -212,4 +224,3 @@ public class DonorDAO {
         return donor;
     }
 }
-

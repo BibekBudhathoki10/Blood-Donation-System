@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="model.BloodInventory, model.Appointment, java.util.List, java.text.SimpleDateFormat" %>
+<%@ page import="model.BloodInventory, model.Appointment, model.BloodRequest, model.User, java.util.List, java.util.Map, java.text.SimpleDateFormat" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -124,6 +124,14 @@
             display: flex;
             gap: 10px;
         }
+        
+        .blood-request-info {
+            background-color: #f8f9fa;
+            border-left: 3px solid #e74c3c;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -168,11 +176,23 @@
         <div class="donations-container">
             <% 
                 List<Appointment> appointments = (List<Appointment>) request.getAttribute("appointments");
+                Map<Integer, BloodRequest> requestMap = (Map<Integer, BloodRequest>) request.getAttribute("requestMap");
+                Map<Integer, User> donorMap = (Map<Integer, User>) request.getAttribute("donorMap");
                 SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM d, yyyy");
                 SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
                 
                 if(appointments != null && !appointments.isEmpty()) {
                     for(Appointment appointment : appointments) {
+                        if(appointment != null) {
+                            BloodRequest bloodRequest = null;
+                            if(requestMap != null) {
+                                bloodRequest = requestMap.get(appointment.getId());
+                            }
+                            
+                            User donorUser = null;
+                            if(donorMap != null) {
+                                donorUser = donorMap.get(appointment.getDonorId());
+                            }
             %>
             <div class="donation-card" data-status="<%= appointment.getStatus().toLowerCase() %>">
                 <div class="donation-header">
@@ -182,8 +202,20 @@
                 <div class="donation-details">
                     <p><strong>Time:</strong> <%= timeFormat.format(appointment.getAppointmentTime()) %></p>
                     <p><strong>Status:</strong> <span class="donation-status status-<%= appointment.getStatus().toLowerCase() %>"><%= appointment.getStatus() %></span></p>
+                    <% if(donorUser != null) { %>
+                        <p><strong>Donor:</strong> <%= donorUser.getName() %></p>
+                    <% } %>
                     <% if(appointment.getNotes() != null && !appointment.getNotes().isEmpty()) { %>
                         <p><strong>Notes:</strong> <%= appointment.getNotes() %></p>
+                    <% } %>
+                    
+                    <% if(bloodRequest != null) { %>
+                        <div class="blood-request-info">
+                            <p><strong>Related Blood Request:</strong> #<%= bloodRequest.getId() %></p>
+                            <p><strong>Blood Group:</strong> <%= bloodRequest.getBloodGroup() %></p>
+                            <p><strong>Patient:</strong> <%= bloodRequest.getPatientName() %></p>
+                            <p><strong>Hospital:</strong> <%= bloodRequest.getHospitalName() %></p>
+                        </div>
                     <% } %>
                 </div>
                 <div class="action-buttons">
@@ -196,18 +228,19 @@
             </div>
             <% 
                     }
-                } else {
+                }
+            } else {
             %>
             <div class="no-donations">
                 <h3>No scheduled donations found</h3>
                 <p>You don't have any blood donation appointments scheduled at the moment.</p>
-                <a href="${pageContext.request.contextPath}/user/schedule-appointment" class="btn btn-primary">Schedule a Donation</a>
+                <a href="${pageContext.request.contextPath}/user/request-blood" class="btn btn-primary">Request Blood</a>
             </div>
             <% } %>
         </div>
         
         <div class="text-center" style="margin-top: 30px;">
-            <a href="${pageContext.request.contextPath}/user/schedule-appointment" class="btn btn-primary">Schedule New Donation</a>
+            <a href="${pageContext.request.contextPath}/user/request-blood" class="btn btn-primary">Request Blood</a>
             <a href="${pageContext.request.contextPath}/user/dashboard" class="btn btn-secondary">Back to Dashboard</a>
         </div>
     </div>

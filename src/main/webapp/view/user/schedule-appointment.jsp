@@ -124,6 +124,18 @@
         .eligibility-question input[type="checkbox"] {
             margin-right: 10px;
         }
+        
+        .error-details {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
     </style>
 </head>
 <body>
@@ -142,6 +154,12 @@
             <div class="alert alert-danger">
                 <%= request.getAttribute("error") %>
             </div>
+            <% if(request.getAttribute("errorDetails") != null) { %>
+                <div class="error-details">
+                    <strong>Error Details:</strong>
+                    <pre><%= request.getAttribute("errorDetails") %></pre>
+                </div>
+            <% } %>
         <% } %>
         
         <div class="eligibility-check">

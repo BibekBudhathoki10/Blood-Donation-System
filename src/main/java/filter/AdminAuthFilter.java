@@ -37,6 +37,16 @@ public void doFilter(ServletRequest request, ServletResponse response, FilterCha
     if (isAdmin) {
         chain.doFilter(request, response);
     } else {
+        // Save the requested URL for redirection after login
+        String requestedUrl = httpRequest.getRequestURI();
+        if (httpRequest.getQueryString() != null) {
+            requestedUrl += "?" + httpRequest.getQueryString();
+        }
+        
+        if (session != null) {
+            session.setAttribute("requestedUrl", requestedUrl);
+        }
+        
         httpResponse.sendRedirect(httpRequest.getContextPath() + "/auth/login");
     }
 }

@@ -30,8 +30,18 @@
             User user = (User) request.getAttribute("user");
             Donor donor = (Donor) request.getAttribute("donor");
             List<Appointment> upcomingAppointments = (List<Appointment>) request.getAttribute("upcomingAppointments");
-            int donationCount = (int) request.getAttribute("donationCount");
+            Integer donationCount = (Integer) request.getAttribute("donationCount");
+            if (donationCount == null) {
+                donationCount = 0;
+            }
             List<DonationEvent> upcomingEvents = (List<DonationEvent>) request.getAttribute("upcomingEvents");
+            
+            // Check if user or donor is null
+            if (user == null || donor == null) {
+                // Redirect to login page
+                response.sendRedirect(request.getContextPath() + "/auth/login");
+                return;
+            }
         %>
         
         <div class="dashboard">
@@ -52,11 +62,11 @@
             
             <div class="dashboard-card">
                 <h3>Quick Actions</h3>
-                <p><a href="${pageContext.request.contextPath}/donor/schedule-appointment" class="btn btn-primary">Schedule Donation</a></p>
-                <p><a href="${pageContext.request.contextPath}/donor/view-requests" class="btn btn-secondary">View Blood Requests</a></p>
-                <p><a href="${pageContext.request.contextPath}/donor/events" class="btn btn-secondary">View Donation Events</a></p>
-            </div>
-        </div>  class="btn btn-secondary">View Donation Events</a></p>
+                <div class="quick-actions">
+                    <a href="${pageContext.request.contextPath}/donor/schedule-appointment" class="btn btn-primary">Schedule Donation</a>
+                    <a href="${pageContext.request.contextPath}/donor/view-requests" class="btn btn-secondary">View Blood Requests</a>
+                    <a href="${pageContext.request.contextPath}/donor/events" class="btn btn-secondary">View Donation Events</a>
+                </div>
             </div>
         </div>
         
@@ -81,7 +91,12 @@
                                     <td><%= appointment.getStatus() %></td>
                                     <td class="table-actions">
                                         <a href="${pageContext.request.contextPath}/donor/reschedule-appointment?id=<%= appointment.getId() %>" class="action-edit">Reschedule</a>
-                                        <a href="${pageContext.request.contextPath}/donor/cancel-appointment?id=<%= appointment.getId() %>" class="action-delete" onclick="return confirm('Are you sure you want to cancel this appointment?')">Cancel</a>
+                                        <form action="${pageContext.request.contextPath}/donor/cancel-appointment" method="post" style="display: inline;">
+                                            <input type="hidden" name="id" value="<%= appointment.getId() %>">
+                                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to cancel this appointment?')">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                             <% } %>
@@ -129,4 +144,3 @@
     <jsp:include page="../common/footer.jsp" />
 </body>
 </html>
-

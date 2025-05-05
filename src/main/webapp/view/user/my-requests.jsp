@@ -1,5 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<%@ page import="model.BloodRequest, java.util.List" %>
+<%@ page import="model.BloodRequest, model.Appointment, model.User, java.util.List, java.util.Map, java.text.SimpleDateFormat" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,87 +8,56 @@
     <title>My Blood Requests - Blood Donation System</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/style.css">
     <style>
+        .request-container {
+            margin-top: 30px;
+        }
+        
         .request-card {
             background-color: #fff;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             padding: 20px;
             margin-bottom: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .request-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 5px;
-            height: 100%;
-        }
-        
-        .request-card.pending::before {
-            background-color: #3498db;
-        }
-        
-        .request-card.approved::before {
-            background-color: #2ecc71;
-        }
-        
-        .request-card.fulfilled::before {
-            background-color: #27ae60;
-        }
-        
-        .request-card.rejected::before {
-            background-color: #e74c3c;
-        }
-        
-        .request-card.cancelled::before {
-            background-color: #95a5a6;
         }
         
         .request-header {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
         }
         
-        .request-header h3 {
-            margin: 0;
-            color: #333;
-        }
-        
-        .request-header .blood-group {
+        .request-title {
             font-size: 1.2rem;
             font-weight: bold;
             color: #e74c3c;
+            margin: 0;
+        }
+        
+        .request-date {
+            background-color: #f8f9fa;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #666;
         }
         
         .request-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
             margin-bottom: 15px;
         }
         
-        .request-detail {
-            margin-bottom: 5px;
+        .request-details p {
+            margin: 5px 0;
+            color: #555;
         }
         
-        .request-detail label {
-            font-weight: bold;
-            color: #666;
-            margin-right: 5px;
+        .request-details strong {
+            color: #333;
         }
         
-        .request-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .status-badge {
+        .request-status {
             display: inline-block;
             padding: 3px 8px;
             border-radius: 3px;
@@ -98,43 +67,95 @@
         }
         
         .status-pending {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .status-approved, .status-in-progress {
             background-color: #3498db;
-            color: #fff;
+            color: white;
         }
         
-        .status-approved {
+        .status-completed {
             background-color: #2ecc71;
-            color: #fff;
+            color: white;
         }
         
-        .status-fulfilled {
-            background-color: #27ae60;
-            color: #fff;
-        }
-        
-        .status-rejected {
+        .status-cancelled, .status-rejected {
             background-color: #e74c3c;
-            color: #fff;
+            color: white;
         }
         
-        .status-cancelled {
-            background-color: #95a5a6;
-            color: #fff;
+        .no-requests {
+            text-align: center;
+            padding: 30px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            color: #666;
         }
         
-        .filter-section {
-            margin-bottom: 30px;
-        }
-        
-        .filter-section form {
+        .filter-container {
             display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: flex-end;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
         
-        .filter-section .form-group {
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .filter-label {
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        
+        .action-buttons {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .appointment-section {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #ddd;
+        }
+        
+        .appointment-section h4 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        
+        .appointment-list {
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        
+        .appointment-item {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .appointment-item:last-child {
+            border-bottom: none;
             margin-bottom: 0;
+        }
+        
+        .donor-info {
+            font-style: italic;
+            color: #666;
         }
     </style>
 </head>
@@ -156,101 +177,166 @@
             </div>
         <% } %>
         
-        <div class="filter-section">
-            <form action="${pageContext.request.contextPath}/user/my-requests" method="get">
-                <div class="form-group">
-                    <label for="status">Filter by Status:</label>
-                    <select id="status" name="status">
-                        <option value="">All</option>
-                        <option value="pending" ${param.status == 'pending' ? 'selected' : ''}>Pending</option>
-                        <option value="approved" ${param.status == 'approved' ? 'selected' : ''}>Approved</option>
-                        <option value="fulfilled" ${param.status == 'fulfilled' ? 'selected' : ''}>Fulfilled</option>
-                        <option value="rejected" ${param.status == 'rejected' ? 'selected' : ''}>Rejected</option>
-                        <option value="cancelled" ${param.status == 'cancelled' ? 'selected' : ''}>Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <button type="submit" class="btn btn-primary">Filter</button>
-                    <a href="${pageContext.request.contextPath}/user/my-requests" class="btn btn-secondary">Reset</a>
-                </div>
-            </form>
-        </div>
-        
-        <div class="action-buttons" style="margin-bottom: 20px;">
-            <a href="${pageContext.request.contextPath}/user/request-blood" class="btn btn-primary">New Blood Request</a>
-        </div>
-        
-        <% 
-            List<BloodRequest> requests = (List<BloodRequest>) request.getAttribute("requests");
-            if(requests != null && !requests.isEmpty()) {
-                for(BloodRequest bloodRequest : requests) {
-        %>
-        <div class="request-card <%= bloodRequest.getStatus().toLowerCase() %>">
-            <div class="request-header">
-                <div>
-                    <h3>Request #<%= bloodRequest.getId() %></h3>
-                    <span class="status-badge status-<%= bloodRequest.getStatus().toLowerCase() %>">
-                        <%= bloodRequest.getStatus() %>
-                    </span>
-                </div>
-                <div class="blood-group">
-                    <%= bloodRequest.getBloodGroup() %> <span>(<%= bloodRequest.getQuantity() %> units)</span>
-                </div>
+        <div class="filter-container">
+            <div class="filter-group">
+                <span class="filter-label">Filter by Status:</span>
+                <select id="statusFilter" class="filter-select" onchange="filterRequests()">
+                    <option value="all">All</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="rejected">Rejected</option>
+                </select>
             </div>
             
-            <div class="request-details">
-                <div>
-                    <div class="request-detail">
-                        <label>Patient:</label>
-                        <span><%= bloodRequest.getPatientName() %></span>
-                    </div>
-                    <div class="request-detail">
-                        <label>Hospital:</label>
-                        <span><%= bloodRequest.getHospitalName() %></span>
-                    </div>
-                    <div class="request-detail">
-                        <label>Urgency:</label>
-                        <span><%= bloodRequest.getUrgency() %></span>
-                    </div>
+            <div class="filter-group">
+                <span class="filter-label">Sort by:</span>
+                <select id="sortBy" class="filter-select" onchange="sortRequests()">
+                    <option value="date-asc">Date (Oldest First)</option>
+                    <option value="date-desc" selected>Date (Newest First)</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="request-container">
+            <% 
+                List<BloodRequest> requests = (List<BloodRequest>) request.getAttribute("requests");
+                Map<Integer, List<Appointment>> requestAppointmentsMap = (Map<Integer, List<Appointment>>) request.getAttribute("requestAppointmentsMap");
+                Map<Integer, User> donorUserMap = (Map<Integer, User>) request.getAttribute("donorUserMap");
+                
+                SimpleDateFormat dateFormat = new SimpleDateFormat("MMMM d, yyyy");
+                SimpleDateFormat timeFormat = new SimpleDateFormat("h:mm a");
+                
+                if(requests != null && !requests.isEmpty()) {
+                    for(BloodRequest bloodRequest : requests) {
+            %>
+            <div class="request-card" data-status="<%= bloodRequest.getStatus().toLowerCase() %>">
+                <div class="request-header">
+                    <h3 class="request-title">Blood Request #<%= bloodRequest.getId() %></h3>
+                    <span class="request-date"><%= dateFormat.format(bloodRequest.getRequestDate()) %></span>
+                </div>
+                <div class="request-details">
+                    <p><strong>Patient:</strong> <%= bloodRequest.getPatientName() %></p>
+                    <p><strong>Blood Group:</strong> <%= bloodRequest.getBloodGroup() %></p>
+                    <p><strong>Quantity:</strong> <%= bloodRequest.getQuantity() %> units</p>
+                    <p><strong>Urgency:</strong> <%= bloodRequest.getUrgency() %></p>
+                    <p><strong>Hospital:</strong> <%= bloodRequest.getHospitalName() %></p>
+                    <p><strong>Required Date:</strong> <%= dateFormat.format(bloodRequest.getRequiredDate()) %></p>
+                    <p><strong>Status:</strong> <span class="request-status status-<%= bloodRequest.getStatus().toLowerCase() %>"><%= bloodRequest.getStatus() %></span></p>
                 </div>
                 
-                <div>
-                    <div class="request-detail">
-                        <label>Required By:</label>
-                        <span><%= bloodRequest.getRequiredDate() %></span>
-                    </div>
-                    <div class="request-detail">
-                        <label>Requested On:</label>
-                        <span><%= bloodRequest.getRequestDate() %></span>
-                    </div>
-                    <div class="request-detail">
-                        <label>Contact:</label>
-                        <span><%= bloodRequest.getContactPerson() %> (<%= bloodRequest.getContactPhone() %>)</span>
+                <% 
+                    // Display appointments for this blood request
+                    List<Appointment> appointments = requestAppointmentsMap.get(bloodRequest.getId());
+                    if(appointments != null && !appointments.isEmpty()) {
+                %>
+                <div class="appointment-section">
+                    <h4>Donor Appointments (<%= appointments.size() %>)</h4>
+                    <div class="appointment-list">
+                        <% for(Appointment appointment : appointments) { %>
+                            <div class="appointment-item">
+                                <p><strong>Date:</strong> <%= dateFormat.format(appointment.getAppointmentDate()) %> at <%= timeFormat.format(appointment.getAppointmentTime()) %></p>
+                                <p><strong>Status:</strong> <span class="request-status status-<%= appointment.getStatus().toLowerCase() %>"><%= appointment.getStatus() %></span></p>
+                                <% 
+                                    User donorUser = donorUserMap.get(appointment.getDonorId());
+                                    if(donorUser != null) {
+                                %>
+                                <p class="donor-info">Donor: <%= donorUser.getName() %> (<%= donorUser.getPhone() %>)</p>
+                                <% } %>
+                            </div>
+                        <% } %>
                     </div>
                 </div>
-            </div>
-            
-            <div class="request-actions">
-                <% if("pending".equals(bloodRequest.getStatus())) { %>
-                    <a href="${pageContext.request.contextPath}/user/edit-request?id=<%= bloodRequest.getId() %>" class="btn btn-secondary">Edit</a>
-                    <a href="${pageContext.request.contextPath}/user/cancel-request?id=<%= bloodRequest.getId() %>" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this request?')">Cancel</a>
-                <% } else if("approved".equals(bloodRequest.getStatus())) { %>
-                    <a href="${pageContext.request.contextPath}/user/cancel-request?id=<%= bloodRequest.getId() %>" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this request?')">Cancel</a>
                 <% } %>
+                
+                <div class="action-buttons">
+                    <% if("pending".equals(bloodRequest.getStatus())) { %>
+                        <a href="${pageContext.request.contextPath}/user/edit-request?id=<%= bloodRequest.getId() %>" class="btn btn-secondary">Edit Request</a>
+                    <% } %>
+                    
+                    <% if("pending".equals(bloodRequest.getStatus()) || "approved".equals(bloodRequest.getStatus())) { %>
+                        <a href="${pageContext.request.contextPath}/user/cancel-request?id=<%= bloodRequest.getId() %>" class="btn btn-danger" onclick="return confirm('Are you sure you want to cancel this request?')">Cancel Request</a>
+                    <% } %>
+                    
+                    <a href="${pageContext.request.contextPath}/user/view-request-appointments?id=<%= bloodRequest.getId() %>" class="btn btn-primary">View Appointments</a>
+                </div>
             </div>
+            <% 
+                    }
+                } else {
+            %>
+            <div class="no-requests">
+                <h3>No blood requests found</h3>
+                <p>You haven't made any blood requests yet.</p>
+            </div>
+            <% } %>
         </div>
-        <% 
-                }
-            } else {
-        %>
-        <div class="alert alert-info">
-            You haven't made any blood requests yet. <a href="${pageContext.request.contextPath}/user/request-blood">Request blood now</a>.
+        
+        <div class="text-center" style="margin-top: 30px;">
+            <a href="${pageContext.request.contextPath}/user/request-blood" class="btn btn-primary">Request Blood</a>
+            <a href="${pageContext.request.contextPath}/user/dashboard" class="btn btn-secondary">Back to Dashboard</a>
         </div>
-        <% } %>
     </div>
     
     <jsp:include page="../common/footer.jsp" />
+    
+    <script>
+        function filterRequests() {
+            const status = document.getElementById('statusFilter').value;
+            const cards = document.querySelectorAll('.request-card');
+            
+            cards.forEach(card => {
+                if (status === 'all' || card.dataset.status === status) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show "no requests" message if all cards are hidden
+            const visibleCards = document.querySelectorAll('.request-card[style="display: block;"]');
+            const noRequests = document.querySelector('.no-requests');
+            
+            if (visibleCards.length === 0 && cards.length > 0) {
+                if (!noRequests) {
+                    const container = document.querySelector('.request-container');
+                    const noRequestsDiv = document.createElement('div');
+                    noRequestsDiv.className = 'no-requests';
+                    noRequestsDiv.innerHTML = `
+                        <h3>No ${status} requests found</h3>
+                        <p>You don't have any blood requests with status "${status}" at the moment.</p>
+                    `;
+                    container.appendChild(noRequestsDiv);
+                }
+            } else if (noRequests && visibleCards.length > 0) {
+                noRequests.style.display = 'none';
+            }
+        }
+        
+        function sortRequests() {
+            const sortBy = document.getElementById('sortBy').value;
+            const container = document.querySelector('.request-container');
+            const cards = Array.from(document.querySelectorAll('.request-card'));
+            
+            cards.sort((a, b) => {
+                const dateA = new Date(a.querySelector('.request-date').textContent);
+                const dateB = new Date(b.querySelector('.request-date').textContent);
+                
+                if (sortBy === 'date-asc') {
+                    return dateA - dateB;
+                } else {
+                    return dateB - dateA;
+                }
+            });
+            
+            // Remove all cards
+            cards.forEach(card => card.remove());
+            
+            // Add sorted cards back
+            cards.forEach(card => container.appendChild(card));
+        }
+    </script>
 </body>
 </html>
-

@@ -1,8 +1,11 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="model.User" %>
 <%
-    User currentUser = (User) session.getAttribute("user");
+    // Get user information from session attributes
+    Integer userId = (Integer) session.getAttribute("userId");
     String userRole = (String) session.getAttribute("userRole");
+    String userName = (String) session.getAttribute("userName");
+    boolean isLoggedIn = (userId != null);
 %>
 <header>
     <div class="header-container">
@@ -17,7 +20,7 @@
             <ul>
                 <li><a href="${pageContext.request.contextPath}/">Home</a></li>
                 
-                <% if (currentUser == null) { %>
+                <% if (!isLoggedIn) { %>
                     <li><a href="${pageContext.request.contextPath}/auth/login">Login</a></li>
                     <li><a href="${pageContext.request.contextPath}/auth/register">Register</a></li>
                 <% } else { %>
@@ -39,9 +42,9 @@
                         <li><a href="${pageContext.request.contextPath}/user/events">Events</a></li>
                     <% } %>
                     <li><a href="${pageContext.request.contextPath}/auth/logout">Logout</a></li>
+                    <li><span class="user-greeting">Hello, <%= userName %></span></li>
                 <% } %>
             </ul>
         </nav>
     </div>
 </header>
-

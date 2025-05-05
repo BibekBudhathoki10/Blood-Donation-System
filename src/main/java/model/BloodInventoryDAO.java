@@ -19,6 +19,28 @@ public class BloodInventoryDAO {
 
     // Create a new blood inventory entry
     public boolean addBloodInventory(BloodInventory inventory) {
+        if (connection == null) {
+            System.err.println("Database connection is null");
+            try {
+                connection = DBConnection.getConnection();
+            } catch (SQLException e) {
+                System.err.println("Failed to reconnect to database: " + e.getMessage());
+                e.printStackTrace();
+                return false;
+            }
+        }
+
+        try {
+            if (connection.isClosed()) {
+                System.err.println("Database connection is closed");
+                connection = DBConnection.getConnection();
+            }
+        } catch (SQLException e) {
+            System.err.println("Error checking connection status: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+
         String sql = "INSERT INTO blood_inventory (blood_group, quantity, collection_date, expiry_date, status, donor_id, location) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             statement.setString(1, inventory.getBloodGroup());
@@ -39,6 +61,7 @@ public class BloodInventoryDAO {
                 }
             }
         } catch (SQLException e) {
+            System.err.println("SQL Error adding blood inventory: " + e.getMessage());
             e.printStackTrace();
         }
         return false;

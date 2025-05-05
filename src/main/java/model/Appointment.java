@@ -9,21 +9,24 @@ public class Appointment {
     private int donorId;
     private Date appointmentDate;
     private Time appointmentTime;
-    private String status; // scheduled, completed, cancelled, no-show
+    private String status;
     private String notes;
+    private Integer bloodRequestId; // Using Integer to allow null values
     private Timestamp createdAt;
 
     // Constructors
     public Appointment() {
     }
 
-    public Appointment(int id, int donorId, Date appointmentDate, Time appointmentTime, String status, String notes, Timestamp createdAt) {
+    public Appointment(int id, int donorId, Date appointmentDate, Time appointmentTime, 
+                      String status, String notes, Integer bloodRequestId, Timestamp createdAt) {
         this.id = id;
         this.donorId = donorId;
         this.appointmentDate = appointmentDate;
         this.appointmentTime = appointmentTime;
         this.status = status;
         this.notes = notes;
+        this.bloodRequestId = bloodRequestId;
         this.createdAt = createdAt;
     }
 
@@ -76,6 +79,14 @@ public class Appointment {
         this.notes = notes;
     }
 
+    public Integer getBloodRequestId() {
+        return bloodRequestId;
+    }
+
+    public void setBloodRequestId(Integer bloodRequestId) {
+        this.bloodRequestId = bloodRequestId;
+    }
+
     public Timestamp getCreatedAt() {
         return createdAt;
     }
@@ -93,8 +104,8 @@ public class Appointment {
                 ", appointmentTime=" + appointmentTime +
                 ", status='" + status + '\'' +
                 ", notes='" + notes + '\'' +
+                ", bloodRequestId=" + bloodRequestId +
                 ", createdAt=" + createdAt +
                 '}';
     }
 }
-

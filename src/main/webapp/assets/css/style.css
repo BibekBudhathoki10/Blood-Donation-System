@@ -1,5 +1,4 @@
-@charset "UTF-8";
-/*System Styles */
+/* Global Styles */
 * {
   margin: 0;
   padding: 0;
@@ -354,6 +353,35 @@ table tr:hover {
   color: #666;
 }
 
+/* Quick Actions Styles */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.quick-actions .btn {
+  display: block;
+  text-align: center;
+  margin: 0;
+  width: 100%;
+  text-decoration: none;
+  padding: 12px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.quick-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-decoration: none;
+}
+
+.user-greeting {
+  font-weight: 500;
+  color: #333;
+}
+
 /* Responsive Styles */
 @media (max-width: 768px) {
   .header-container {
@@ -382,4 +410,3 @@ table tr:hover {
     padding: 20px;
   }
 }
-
