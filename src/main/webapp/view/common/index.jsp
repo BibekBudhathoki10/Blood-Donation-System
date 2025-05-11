@@ -133,7 +133,7 @@
         
         <div class="hero-content">
             <h1>Donate Blood, Save Lives</h1>
-            <p>Your donation can make a difference. Join our community of donors and help save lives by donating blood. Every drop counts!</p>
+            <p>Your donation can make a difference. Join our community of donors and help to save lives by donating blood. Every drop counts!</p>
             <div class="hero-buttons">
                 <a href="${pageContext.request.contextPath}/auth/register" class="btn btn-primary">Register as Donor or User</a>
                 <a href="${pageContext.request.contextPath}/auth/login" class="btn btn-secondary">Login</a>
