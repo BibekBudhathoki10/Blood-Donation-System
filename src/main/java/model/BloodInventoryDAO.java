@@ -13,16 +13,20 @@ public class BloodInventoryDAO {
         try {
             connection = DBConnection.getConnection();
         } catch (SQLException e) {
+            System.err.println("Error in BloodInventoryDAO constructor: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
     // Create a new blood inventory entry
     public boolean addBloodInventory(BloodInventory inventory) {
+        System.out.println("Starting addBloodInventory with: " + inventory.getBloodGroup() + ", quantity: " + inventory.getQuantity());
+        
         if (connection == null) {
-            System.err.println("Database connection is null");
+            System.err.println("Database connection is null, attempting to reconnect");
             try {
                 connection = DBConnection.getConnection();
+                System.out.println("Reconnection successful");
             } catch (SQLException e) {
                 System.err.println("Failed to reconnect to database: " + e.getMessage());
                 e.printStackTrace();
@@ -32,8 +36,9 @@ public class BloodInventoryDAO {
 
         try {
             if (connection.isClosed()) {
-                System.err.println("Database connection is closed");
+                System.err.println("Database connection is closed, attempting to reconnect");
                 connection = DBConnection.getConnection();
+                System.out.println("Reconnection successful");
             }
         } catch (SQLException e) {
             System.err.println("Error checking connection status: " + e.getMessage());
@@ -43,6 +48,15 @@ public class BloodInventoryDAO {
 
         String sql = "INSERT INTO blood_inventory (blood_group, quantity, collection_date, expiry_date, status, donor_id, location) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            System.out.println("Preparing statement with values:");
+            System.out.println("Blood Group: " + inventory.getBloodGroup());
+            System.out.println("Quantity: " + inventory.getQuantity());
+            System.out.println("Collection Date: " + inventory.getCollectionDate());
+            System.out.println("Expiry Date: " + inventory.getExpiryDate());
+            System.out.println("Status: " + inventory.getStatus());
+            System.out.println("Donor ID: " + inventory.getDonorId());
+            System.out.println("Location: " + inventory.getLocation());
+            
             statement.setString(1, inventory.getBloodGroup());
             statement.setInt(2, inventory.getQuantity());
             statement.setDate(3, inventory.getCollectionDate());
@@ -51,17 +65,30 @@ public class BloodInventoryDAO {
             statement.setInt(6, inventory.getDonorId());
             statement.setString(7, inventory.getLocation());
             
+            System.out.println("Executing SQL statement...");
             int affectedRows = statement.executeUpdate();
+            System.out.println("Affected rows: " + affectedRows);
+            
             if (affectedRows > 0) {
                 try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                     if (generatedKeys.next()) {
                         inventory.setId(generatedKeys.getInt(1));
+                        System.out.println("Successfully added blood inventory with ID: " + inventory.getId());
                         return true;
+                    } else {
+                        System.err.println("Failed to retrieve generated ID for blood inventory");
                     }
                 }
+            } else {
+                System.err.println("No rows affected when adding blood inventory");
             }
         } catch (SQLException e) {
             System.err.println("SQL Error adding blood inventory: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Unexpected error adding blood inventory: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
